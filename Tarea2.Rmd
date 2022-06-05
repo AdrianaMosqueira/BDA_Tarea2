@@ -1,0 +1,165 @@
+---
+title: "Tarea_2"
+author: "Elias Quispe"
+date: "2/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Clear Global environment
+rm(list=ls()) 
+```
+
+```{r message=FALSE, warning=FALSE}
+library(readstata13)
+library(survey)
+library(tidyverse)
+library(foreign)
+library(haven)
+library(dplyr)
+library(rio)
+library(tidyr)
+library(sampling)
+```
+# Parte I
+
+### 1.	Descargue el Censo Nacional de Población Penitenciaria 2016 de la página del INEI (http://iinei.inei.gob.pe/microdatos/). Puede descargar solo la carátula o también más módulos de dicho censo.
+
+
+```{r}
+pob_penit= read_sav("01_PENALES_CARATULA.sav", encoding = "UTF-8", user_na = TRUE)
+```
+
+
+### 2.	Genere una variable dicotómica con el valor de 1 para quienes cometen “Delitos contra la seguridad pública”, 0 para los demás casos. Llamar a esta variable “pp_dcsp”
+
+```{r}
+# Generar la variable de internos que han cometido delitos con la seguridad pública
+pob_penit <- pob_penit |> 
+  mutate(pp_dcsp = if_else(DELITO_GENERICO=="DELITOS CONTRA LA SEGURIDAD PUBLICA",1,0))
+```
+
+### 3.	Establecer una semilla (“seed”) usando los dígitos del cumpleaños de alguno de los miembros del grupo.
+
+```{r}
+set.seed(19011990) # Clave para poder replicar
+```
+
+### 4.	Extraer una muestra estratificada y por conglomerados que contenga entre el 1% y 5% de la población (toda la base). Especificar qué variables se utilizan para los estratos y conglomerados y discutir por qué son adecuadas para dicho propósito. Discutir también si hay otras variables que podrían haberse utilizado para los estratos o conglomerados.
+
+Muestra Aleatoria Estratificada
+
+La variable usada para estratificar será el intervalo del número de internos por Establecimiento Penitenciario. Esto permite que cada elemento de un conglomerado pertenezca exclusivamente a un determinado estrato.También se puede utilizar otras variables en este caso sociodemográficas como sexo, edad, nivel educativo, etc.
+
+```{r}
+# Generamos una variable que contenga el total de la población por Establecimiento Penitenciario
+internos_ep = pob_penit |> 
+  count(EST_PENIT) |>
+  rename(rango=n)
+pob_penit <- merge(x = pob_penit , y = internos_ep , by = c("EST_PENIT"))
+```
+
+
+```{r}
+# Estratificamos de acuerdo al rango de número de internos 
+pob_penit <- pob_penit |> 
+  mutate(rango = case_when(rango >=1 & rango <=1000 ~ "1 a 1000 internos",
+                                rango >=1001 & rango <= 9000 ~ "1001 a 9000 internos" ,
+                                rango > 9000 ~ "9000 internos a más"),
+         .keep = "all")
+```
+
+```{r}
+# Obtenemos el conteo de la poblaciones por estrato
+pob_penit |> 
+  count(rango) |> 
+  rename(cantidad=n)
+```
+```{r}
+# Extraemos el Muestreo Aleatorio Estratificado por rango de poblacion de internos
+set.seed(190190) # Clave para poder replicar
+mae_pob_penit <- pob_penit |>
+  group_by(rango) |> 
+  slice_sample(prop = 0.05) 
+# Obtenemos el conteo de la poblaciones por estrato
+mae_pob_penit |> 
+  count(rango) |> 
+  rename(cantidad=n)
+```
+
+```{r}
+# Ordenaremos de acuerdo al rango de internos
+pob_penit= pob_penit[order(pob_penit$rango,pob_penit$EST_PENIT ), ]
+dis1= list("stratified","cluster")
+# La variable 'rango'(Rango de internos) tiene 3 estratos y se usa como variable de estratificación en la muestra de primera etapa 
+# La variable 'EST_PENIT' (Establecimiento Penitenciario) tiene 65 categorías y se usa como variable de conglomerado en la muestra de segunda etapa.
+
+#m =mstage(pob_penit,stage= dis1, varnames=list("rango","EST_PENIT"), size=list(c(614,2714,480), c(5,5,5)), method=list(" ","srswor"))
+```
+
+
+Muestra con conglomerados (una etapa)
+
+```{r}
+# Al muestrear conglomerados aleatoriamente.
+
+# Primero, usamos la base por conglomerados (Estab. penitenciario) 
+base_ep_clusters <- pob_penit %>%
+  count(EST_PENIT)
+
+# Segundo, obtenemos la muestra aleatoria de conglomerados (Estab. penitenciario)
+set.seed(19011990)
+mac1_pob_penit <- base_ep_clusters %>%
+  slice_sample(prop = 0.05)
+
+# Tercero, juntamos las bases para tener las observaciones de los clusters elegidos
+mac1_f <- merge(x = pob_penit , y = mac1_pob_penit , by = c("EST_PENIT"))
+```
+
+Muestra con conglomerados (multietápica)
+
+```{r}
+# Muestreamos al interior de cada cluster. Tenemos 65 clusters y seleccionaremos 10 obs de cada uno. 
+set.seed(19011990)
+mac2_f <- mac1_f %>%
+  group_by(EST_PENIT) %>%
+  slice_sample(n = 10)
+```
+
+### 5.	Declarar el diseño muestral (completo) y obtener las siguientes estadísticas (deben ser representativas):
+
+```{r}
+#diseño_m = svydesign(id = ~EST_PENIT, strata = ~rango , fpc = ~fpc , data = muestra, nest = T)
+```
+
+
+#### a.	Porcentaje de personas que ha cometido “Delitos contra la seguridad pública”
+
+
+#### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
+
+
+# Parte III
+
+Pregunta 1
+
+# Un hacedor de políticas públicas que cuenta con conocimientos intermedios de estadística le pide que utilice la Encuesta Nacional Agropecuaria más reciente para obtener estadísticas distritales de acceso a asistencia técnica en agricultores de Ayacucho. Estos datos serán utilizados en el diseño de un programa público de apoyo a los productores. Explíquele al funcionario si esto es posible y por qué. En caso no sea posible, propóngale qué otra fuente de datos podría usarse y cuáles serían sus ventajas y desventajas. (Palabras: 300) 
+
+De acuerdo a los módulos de la Encuesta Nacional Agropecuaria, se puede obtener información respecto al uso de la tierra, superficie sembrada y cosechada, superficie agricola con riego tecnificado, destinos de producción, porcentaje de productores que recibieron asistencia tecnica (ésta variable cuenta demasiados datos faltantes), etc, con los cuales pueden ser usados para un análisis estrictamente econometrico que permita evaluar el impacto (efectos positivos y negativos)de una política pública en Ayacucho, con los que se pueda evaluar de forma continua la evolución de dichos indicadores y
+contribuya al diseño y orientación de programas.Por otro lado, de acuerdo a la Ficha Técnica del ENAGRO, no forman parte del estudio las unidades agropecuarias que son comunidades campesinas y nativas por lo que al enfocarnos en el departamento de Ayacucho nuestra muestra perdería representatividad.
+
+Se podría proponer una base de datos mucho más representativa como el Censo Nacional Agropecuario del 2012, ya que nos proporciona un mejor conocimiento de la estructura
+agraria del país a nivel de distrito, provincia y departamento, mientras que la del ENAGRO se enfoca a nivel de pequeñas, medianas y grandes unidades agropecuarias del país. Asimismo, del total de unidades agropecuarias censadas la CENAGRO posee mas del 98% como resultado final del censo completo.
+
+
+
+
+
+
+
+
+
