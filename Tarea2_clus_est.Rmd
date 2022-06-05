@@ -69,7 +69,7 @@ pob_penit=mutate(pob_penit,Grupo_edad=
                             EDAD %in% c(50:59)~"50-59",
                             EDAD %in% c(60:69)~"60-69",
                             EDAD %in% c(70:79)~"70-79",
-                            EDAD %in% c(80:120)~"80 a más",
+                            EDAD %in% c(80:120)~"80 a mas",
                             TRUE~"Ninguno"))
 ```
 
@@ -100,7 +100,7 @@ mac2_f <- mac1_f %>%
 
 
 ```{r}
-#Verificamos si nuestra muestra contiene entre 1% y 5% del total de la población 
+#Verificamos si nuestra muestra contiene entre 1% y 5% del total de la población. 
 
 tot_pop=nrow(pob_penit) 
 tot_pop 
@@ -126,14 +126,14 @@ mac2_f_30_39 = subset(mac2_f,mac2_f$Grupo_edad=="30-39")
 mac2_f_40_49 = subset(mac2_f,mac2_f$Grupo_edad=="40-49")
 mac2_f_50_59 = subset(mac2_f,mac2_f$Grupo_edad=="50-59")
 mac2_f_60_69 = subset(mac2_f,mac2_f$Grupo_edad=="60-69")
-mac2_f_60_79 = subset(mac2_f,mac2_f$Grupo_edad=="70-79")
-mac2_f_80_mas = subset(mac2_f,mac2_f$Grupo_edad=="80 a más")
+mac2_f_70_79 = subset(mac2_f,mac2_f$Grupo_edad=="70-79")
+mac2_f_80_mas = subset(mac2_f,mac2_f$Grupo_edad=="80 a mas")
 ```
 
 
 ```{r}
 #Luego crearemos una variable con la corrección de población finita para cada estrato
-
+#Pirmero los creamos como objetos 
 N019=c(1162)
 n019=c(14)
 fpc019=1-(n019/N019)
@@ -150,43 +150,86 @@ fpc3039=1-(n3039/N3039)
 fpc3039
 
 N4049=c(15308)
-n4049=c()
+n4049=c(226)
 fpc4049=1-(n4049/N4049)
 fpc4049
 
 N5059=c(7474)
-n5059=c()
+n5059=c(110)
 fpc5059=1-(n5059/N5059)
 fpc5059
 
-N6069=c()
-n6069=c()
+N6069=c(2418)
+n6069=c(32)
 fpc6069=1-(n6069/N6069)
 fpc6069
 
-N7079=c()
-n7079=c()
+N7079=c(525)
+n7079=c(8)
 fpc7079=1-(n7079/N7079)
-fpc019
+fpc7079
 
-N80mas=c()
-n80mas=c()
+N80mas=c(58)
+n80mas=c(0)
 fpc80mas=1-(n80mas/N80mas)
 fpc80mas
+```
+
+```{r}
+#Y luego como variables
+mac2_f_0_19$fpc_mae=fpc019
+head(mac2_f_0_19$fpc_mae)
+
+mac2_f_20_29$fpc_mae=fpc2029
+head(mac2_f_20_29$fpc_mae)
+
+mac2_f_30_39$fpc_mae=fpc3039
+head(mac2_f_30_39$fpc_mae)
+
+mac2_f_40_49$fpc_mae=fpc4049
+head(mac2_f_40_49$fpc_mae)
+
+mac2_f_50_59$fpc_mae=fpc5059
+head(mac2_f_50_59$fpc_mae)
+
+mac2_f_60_69$fpc_mae=fpc6069
+head(mac2_f_60_69$fpc_mae)
+
+mac2_f_70_79$fpc_mae=fpc7079
+head(mac2_f_70_79$fpc_mae)
+
+#No creamos fpc para el grupo de 80 a más porque no hay observaciones
+```
+
+```{r}
+#Procedemos a fusionar nuestras submuestras.
+mac2_append1=rbind(mac2_f_0_19, mac2_f_20_29)
+mac2_append2=rbind(mac2_append1, mac2_f_30_39)
+mac2_append3=rbind(mac2_append2, mac2_f_40_49)
+mac2_append4=rbind(mac2_append3, mac2_f_50_59)
+mac2_append5=rbind(mac2_append4, mac2_f_60_69)
+mac2_append6=rbind(mac2_append5, mac2_f_70_79)
 ```
 
 
 ### 5.	Declarar el diseño muestral (completo) y obtener las siguientes estadísticas (deben ser representativas):
 
 ```{r}
-#diseño_m = svydesign(id = ~EST_PENIT, strata = ~rango , fpc = ~fpc , data = muestra, nest = T)
+diseno_m = svydesign(id = ~EST_PENIT, strata = ~Grupo_edad , fpc = ~fpc_mae , data = mac2_append6, nest = T)
 ```
 
 
 #### a.	Porcentaje de personas que ha cometido “Delitos contra la seguridad pública”
 
+```{r}
+svymean(~pp_dcsp , diseno_m)
+```
+
 
 #### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
+```{r}
+svytotal(~pp_dcsp , diseno_m)
+```
 
 
 # Parte III
