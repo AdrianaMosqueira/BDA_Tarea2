@@ -76,9 +76,36 @@ pob_penit <- pob_penit |>
 ```{r}
 # Obtenemos el conteo de la poblaciones por estrato
 pob_penit |> 
-  count(rango) |> 
+ count(rango) |> 
   rename(cantidad=n)
 ```
+
+
+```{r}
+# Estratificamos de acuerdo al rango de número de internos 
+pob_penit <- pob_penit |> 
+  mutate(rango3 = case_when(rango >=1 & rango <=1000 ~ "1 a 1000 internos",
+                                rango >=1001 & rango <= 2000 ~ "1001 a 2000 internos", 
+                                rango >=2001 & rango <= 3000 ~ "2001 a 3000 internos",
+                                rango >=3001 & rango <= 4000 ~ "3001 a 4000 internos",
+                                rango >=4001 & rango <= 9000 ~ "4001 a 9000 internos",
+                                rango > 9000 ~ "9001 internos a más"),
+         .keep = "all")
+```
+
+```{r}
+table(pob_penit$EST_PENIT, by=pob_penit$rango3)
+```
+
+
+```{r}
+pob_penit |> 
+  count(rango3) |> 
+  rename(cantidad=n)
+```
+
+
+
 ```{r}
 # Extraemos el Muestreo Aleatorio Estratificado por rango de poblacion de internos
 set.seed(190190) # Clave para poder replicar
