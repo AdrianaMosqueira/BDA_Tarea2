@@ -41,15 +41,13 @@ library(sampling)
 
 # Parte I
 
-### 1.	Descargue el Censo Nacional de Población Penitenciaria 2016 de la página del INEI (http://iinei.inei.gob.pe/microdatos/). Puede descargar solo la carátula o también más módulos de dicho censo.
-
+## 1.	Descargue el Censo Nacional de Población Penitenciaria 2016 de la página del INEI (http://iinei.inei.gob.pe/microdatos/). Puede descargar solo la carátula o también más módulos de dicho censo.
 
 ```{r}
 pob_penit= read_sav("01_PENALES_CARATULA.sav", encoding = "UTF-8", user_na = TRUE)
 ```
 
-
-### 2.	Genere una variable dicotómica con el valor de 1 para quienes cometen “Delitos contra la seguridad pública”, 0 para los demás casos. Llamar a esta variable “pp_dcsp”
+## 2.	Genere una variable dicotómica con el valor de 1 para quienes cometen “Delitos contra la seguridad pública”, 0 para los demás casos. Llamar a esta variable “pp_dcsp”
 
 ```{r}
 # Generar la variable de internos que han cometido delitos con la seguridad pública
@@ -57,13 +55,13 @@ pob_penit <- pob_penit |>
   mutate(pp_dcsp = if_else(DELITO_GENERICO=="DELITOS CONTRA LA SEGURIDAD PUBLICA",1,0))
 ```
 
-### 3.	Establecer una semilla (“seed”) usando los dígitos del cumpleaños de alguno de los miembros del grupo.
+## 3.	Establecer una semilla (“seed”) usando los dígitos del cumpleaños de alguno de los miembros del grupo.
 
 ```{r}
 set.seed(19011990) # Clave para poder replicar
 ```
 
-### 4.	Extraer una muestra estratificada y por conglomerados que contenga entre el 1% y 5% de la población (toda la base). Especificar qué variables se utilizan para los estratos y conglomerados y discutir por qué son adecuadas para dicho propósito. Discutir también si hay otras variables que podrían haberse utilizado para los estratos o conglomerados.
+## 4.	Extraer una muestra estratificada y por conglomerados que contenga entre el 1% y 5% de la población (toda la base). Especificar qué variables se utilizan para los estratos y conglomerados y discutir por qué son adecuadas para dicho propósito. Discutir también si hay otras variables que podrían haberse utilizado para los estratos o conglomerados.
 
 Muestra Aleatoria Estratificada
 
@@ -76,7 +74,6 @@ internos_ep = pob_penit |>
   rename(rango=n)
 pob_penit <- merge(x = pob_penit , y = internos_ep , by = c("EST_PENIT"))
 ```
-
 
 ```{r}
 # Estratificamos de acuerdo al rango de número de internos 
@@ -94,7 +91,6 @@ pob_penit |>
   rename(cantidad=n)
 ```
 
-
 ```{r}
 # Estratificamos de acuerdo al rango de número de internos 
 pob_penit <- pob_penit |> 
@@ -111,14 +107,11 @@ pob_penit <- pob_penit |>
 table(pob_penit$EST_PENIT, by=pob_penit$rango3)
 ```
 
-
 ```{r}
 pob_penit |> 
   count(rango3) |> 
   rename(cantidad=n)
 ```
-
-
 
 ```{r}
 # Extraemos el Muestreo Aleatorio Estratificado por rango de poblacion de internos
@@ -141,7 +134,6 @@ dis1= list("stratified","cluster")
 
 #m =mstage(pob_penit,stage= dis1, varnames=list("rango","EST_PENIT"), size=list(c(614,2714,480), c(5,5,5)), method=list(" ","srswor"))
 ```
-
 
 Muestra con conglomerados (una etapa)
 
@@ -177,7 +169,6 @@ mac2_f <- mac1_f %>%
 #diseño_m = svydesign(id = ~EST_PENIT, strata = ~rango , fpc = ~fpc , data = muestra, nest = T)
 ```
 
-
 #### a.	Porcentaje de personas que ha cometido “Delitos contra la seguridad pública”
 
 
@@ -194,9 +185,9 @@ La Encuesta Nacional de Programas Presupuestales (ENAPRES) tiene como objetivo, 
 
 Por su parte, la unidad primaria de muestreo (UPM), diferencia entre el área urbano y rural. Para el primer caso, este se conformó por una o más manzanas consecutivas o adyacentes, además, un conglomerado urbano contiene en promedio 140 viviendas particulares. Para el segundo caso, se identificaron 2 tipos: el conglomerado rural conformado por una o más manzanas consecutivas o adyacentes que tiene 140 viviendas particulares en promedio y el Área de Empadronamiento Rural (AER) que contiene en promedio 100 viviendas particulares.
 
-Además, para ambos caso se considero la vivienda particular comol la unidad secundaria de muestreo (USM). 
+Además, para ambos casos se considero la vivienda particular comol la unidad secundaria de muestreo (USM). 
 
-En cuanto al diseño muestral, es de tipo probabilística, estratificada, bietápica, independiente en cada departamento, de selección sistemática con probabilidad proporcional al tamaño en la primera etapa y sistemática simple en la segunda etapa. Además, se indica que el nivel de confianza de los resultados es del 95%.
+En cuanto al tipo de muestreo se identifica que esta encuesta es de tipo probabilística, estratificada, bietápica, independiente en cada departamento, de selección sistemática con probabilidad proporcional al tamaño en la primera etapa y sistemática simple en la segunda etapa. Además, se indica que el nivel de confianza de los resultados es del 95%.
 
 ```{r}
 setwd("C:/Users/limon/OneDrive/2022/02. Diplomado/05. Big Data y Analytics para la GPP/PC2/761-Modulo1676")
