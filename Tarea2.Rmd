@@ -195,7 +195,7 @@ Además, para ambos casos se considero la vivienda particular comol la unidad se
 En cuanto al tipo de muestreo se identifica que esta encuesta es de tipo probabilística, estratificada, bietápica, independiente en cada departamento, de selección sistemática con probabilidad proporcional al tamaño en la primera etapa y sistemática simple en la segunda etapa. Además, se indica que el nivel de confianza de los resultados es del 95%.
 
 ```{r}
-setwd("C:/Users/limon/OneDrive/2022/02. Diplomado/05. Big Data y Analytics para la GPP/PC2/761-Modulo1676")
+setwd("C:/Users/limon/Documents/GitHub/BDA_Tarea2")
 ```
 
 ```{r}
