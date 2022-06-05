@@ -41,13 +41,13 @@ library(sampling)
 
 # Parte I
 
-## 1.	Descargue el Censo Nacional de Población Penitenciaria 2016 de la página del INEI (http://iinei.inei.gob.pe/microdatos/). Puede descargar solo la carátula o también más módulos de dicho censo.
+## Pregunta 1.	Descargue el Censo Nacional de Población Penitenciaria 2016 de la página del INEI (http://iinei.inei.gob.pe/microdatos/). Puede descargar solo la carátula o también más módulos de dicho censo.
 
 ```{r}
 pob_penit= read_sav("01_PENALES_CARATULA.sav", encoding = "UTF-8", user_na = TRUE)
 ```
 
-## 2.	Genere una variable dicotómica con el valor de 1 para quienes cometen “Delitos contra la seguridad pública”, 0 para los demás casos. Llamar a esta variable “pp_dcsp”
+## Pregunta 2.	Genere una variable dicotómica con el valor de 1 para quienes cometen “Delitos contra la seguridad pública”, 0 para los demás casos. Llamar a esta variable “pp_dcsp”
 
 ```{r}
 # Generar la variable de internos que han cometido delitos con la seguridad pública
@@ -55,13 +55,13 @@ pob_penit <- pob_penit |>
   mutate(pp_dcsp = if_else(DELITO_GENERICO=="DELITOS CONTRA LA SEGURIDAD PUBLICA",1,0))
 ```
 
-## 3.	Establecer una semilla (“seed”) usando los dígitos del cumpleaños de alguno de los miembros del grupo.
+## Pregunta 3.	Establecer una semilla (“seed”) usando los dígitos del cumpleaños de alguno de los miembros del grupo.
 
 ```{r}
 set.seed(19011990) # Clave para poder replicar
 ```
 
-## 4.	Extraer una muestra estratificada y por conglomerados que contenga entre el 1% y 5% de la población (toda la base). Especificar qué variables se utilizan para los estratos y conglomerados y discutir por qué son adecuadas para dicho propósito. Discutir también si hay otras variables que podrían haberse utilizado para los estratos o conglomerados.
+## Pregunta 4.	Extraer una muestra estratificada y por conglomerados que contenga entre el 1% y 5% de la población (toda la base). Especificar qué variables se utilizan para los estratos y conglomerados y discutir por qué son adecuadas para dicho propósito. Discutir también si hay otras variables que podrían haberse utilizado para los estratos o conglomerados.
 
 Muestra Aleatoria Estratificada
 
@@ -163,23 +163,23 @@ mac2_f <- mac1_f %>%
   slice_sample(n = 10)
 ```
 
-### 5.	Declarar el diseño muestral (completo) y obtener las siguientes estadísticas (deben ser representativas):
+## Pregunta 5.	Declarar el diseño muestral (completo) y obtener las siguientes estadísticas (deben ser representativas):
 
 ```{r}
 #diseño_m = svydesign(id = ~EST_PENIT, strata = ~rango , fpc = ~fpc , data = muestra, nest = T)
 ```
 
-#### a.	Porcentaje de personas que ha cometido “Delitos contra la seguridad pública”
+### a.	Porcentaje de personas que ha cometido “Delitos contra la seguridad pública”
 
 
-#### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
+### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
 
 
 # Parte II: ENARES
 
 A cada grupo se le asignará una encuesta que pueda ser descargada de la página de microdatos del INEI. Dicha encuesta será utilizada para este ejercicio.
 
-## 1.	Explicar el diseño muestral de la encuesta. Luego, declarar el diseño muestral (completo). Para esto se recomienda revisar la ficha técnica de la encuesta. Esta se encuentra disponible en la web de microdatos del INEI. 
+## Pregunta 1.	Explicar el diseño muestral de la encuesta. Luego, declarar el diseño muestral (completo). Para esto se recomienda revisar la ficha técnica de la encuesta. Esta se encuentra disponible en la web de microdatos del INEI. 
 
 La Encuesta Nacional de Programas Presupuestales (ENAPRES) tiene como objetivo, detallar información estadística para el seguimiento y evaluación de los Programas Presupuestales (PP) a nivel nacional. Esta encuesta incluye aquellas viviendas particulares y sus ocupantes, quienes residen en el área urbana y área rural del país; sin embargo, se excluyeron aquellas personas que viven en viviendas colectivas. En cuanto al marco muestral básico para la selección de la muestra, se utilizó la información estadística y cartográfica del Sistema de Focalización de Hogares (SISFOH), actualizada al 2012 y 2013 del directorio de viviendas de cada conglomerado seleccionado.
 
@@ -201,13 +201,12 @@ ENAPRES = read_csv("CAP_200_URBANO_RURAL_4.csv")
 table(ENAPRES$ESTRATO)
 ```
 
-
+Declarar el diseño muestral
 ```{r}
-# Declarar el diseño muestral
 ENAPRES_svy = svydesign(id = ~1 , strata = ~ESTRATO, weights = ~FACTOR  , data = ENAPRES)
 ```
 
-## 2.	Elegir y calcular dos variables: (i) una dicotómica = REGIONNATU (Selva ==1, Otros ==0), (ii) una continua = Grupo etario: P208_A. 
+## Pregunta 2.	Elegir y calcular dos variables: (i) una dicotómica = REGIONNATU (Selva ==1, Otros ==0), (ii) una continua = Grupo etario: P208_A. 
 
 (i) Se construye una variable dicotómica, que tendrá el varlor de 1 = Selva y 0 = Otros (o No Selva)
 ```{r}
@@ -228,7 +227,7 @@ ENAPRES = ENAPRES |>
 table(ENAPRES$P208_A)
 ```
 
-## 3.	Para la dicotómica, obtener la media y población. Para la continua, obtener la media (deben ser representativas). 
+## Pregunta 3.	Para la dicotómica, obtener la media y población. Para la continua, obtener la media (deben ser representativas). 
 a.	Variable dicotómica = REGIONNATU (Selva ==1, Otros ==0): media y población
 ```{r}
 svymean(~REGIONNATU , ENAPRES_svy)
@@ -242,9 +241,7 @@ svymean(~P208_A , ENAPRES_svy)
 
 # Parte III
 
-Pregunta 1
-
-# Un hacedor de políticas públicas que cuenta con conocimientos intermedios de estadística le pide que utilice la Encuesta Nacional Agropecuaria más reciente para obtener estadísticas distritales de acceso a asistencia técnica en agricultores de Ayacucho. Estos datos serán utilizados en el diseño de un programa público de apoyo a los productores. Explíquele al funcionario si esto es posible y por qué. En caso no sea posible, propóngale qué otra fuente de datos podría usarse y cuáles serían sus ventajas y desventajas. (Palabras: 300) 
+## Pregunta 1. Un hacedor de políticas públicas que cuenta con conocimientos intermedios de estadística le pide que utilice la Encuesta Nacional Agropecuaria más reciente para obtener estadísticas distritales de acceso a asistencia técnica en agricultores de Ayacucho. Estos datos serán utilizados en el diseño de un programa público de apoyo a los productores. Explíquele al funcionario si esto es posible y por qué. En caso no sea posible, propóngale qué otra fuente de datos podría usarse y cuáles serían sus ventajas y desventajas. (Palabras: 300) 
 
 De acuerdo a los módulos de la Encuesta Nacional Agropecuaria, se puede obtener información respecto al uso de la tierra, superficie sembrada y cosechada, superficie agricola con riego tecnificado, destinos de producción, porcentaje de productores que recibieron asistencia tecnica (ésta variable cuenta demasiados datos faltantes), etc, con los cuales pueden ser usados para un análisis estrictamente econometrico que permita evaluar el impacto (efectos positivos y negativos)de una política pública en Ayacucho, con los que se pueda evaluar de forma continua la evolución de dichos indicadores y
 contribuya al diseño y orientación de programas.Por otro lado, de acuerdo a la Ficha Técnica del ENAGRO, no forman parte del estudio las unidades agropecuarias que son comunidades campesinas y nativas por lo que al enfocarnos en el departamento de Ayacucho nuestra muestra perdería representatividad.
@@ -253,6 +250,7 @@ Se podría proponer una base de datos mucho más representativa como el Censo Na
 agraria del país a nivel de distrito, provincia y departamento, mientras que la del ENAGRO se enfoca a nivel de pequeñas, medianas y grandes unidades agropecuarias del país. Asimismo, del total de unidades agropecuarias censadas la CENAGRO posee mas del 98% como resultado final del censo completo.
 
 
+## Pregunta 2. En el Ministerio de Desarrollo le han encargado a Ud. como muestrista principal diseñar una encuesta probabilística para medir la prevalencia de vulnerabilidad a la pobreza (variable dicotómica) en todas las regiones del Perú. Su supervisor, quien es un muy buen policymaker pero sin ninguna formación cuantitativa ni de muestreo, se enteró del libro de Dillman (2014) y de las tablas de cálculo de tamaño de muestra. Él está solicitándole que justifique sus decisiones metodológicas pues argumenta que “como máximo se necesitaría una muestra de tamaño n=1067 como se observa en la figura 3.5 de libro”. Ud. ha planteado que se levante un muestreo complejo (estratificado y biétapico) para lograr el objetivo. Explique en castellano sencillo y de forma intuitiva por qué necesitaría (o no) una muestra de mayor tamaño. Incluya en su respuesta el concepto de tamaño de muestra efectivo, correlación intracluster y efecto de diseño. Recuerde que su supervisor no maneja estos temas. (Palabras: 500)
 
 
 
