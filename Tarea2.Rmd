@@ -67,112 +67,176 @@ Muestra Aleatoria Estratificada
 
 La variable usada para estratificar será el intervalo del número de internos por Establecimiento Penitenciario. Esto permite que cada elemento de un conglomerado pertenezca exclusivamente a un determinado estrato.También se puede utilizar otras variables en este caso sociodemográficas como sexo, edad, nivel educativo, etc.
 
+
+### Nos interesa saber cuál es la proporción de presos por etapas de vida. Creamos una variable categórica por cohortes que nos serivrá para posterior estratificación.
+
 ```{r}
-# Generamos una variable que contenga el total de la población por Establecimiento Penitenciario
-internos_ep = pob_penit |> 
-  count(EST_PENIT) |>
-  rename(rango=n)
-pob_penit <- merge(x = pob_penit , y = internos_ep , by = c("EST_PENIT"))
+pob_penit=mutate(pob_penit,Grupo_edad=
+                       case_when(EDAD %in% c(0:19)~"0-19",
+                            EDAD %in% c(20:29)~"20-29",
+                            EDAD %in% c(30:39)~"30-39",
+                            EDAD %in% c(40:49)~"40-49",
+                            EDAD %in% c(50:59)~"50-59",
+                            EDAD %in% c(60:69)~"60-69",
+                            EDAD %in% c(70:79)~"70-79",
+                            EDAD %in% c(80:120)~"80 a mas",
+                            TRUE~"Ninguno"))
 ```
 
+Primero necesitamos una base de los conglomerados
 ```{r}
-# Estratificamos de acuerdo al rango de número de internos 
-pob_penit <- pob_penit |> 
-  mutate(rango = case_when(rango >=1 & rango <=1000 ~ "1 a 1000 internos",
-                                rango >=1001 & rango <= 9000 ~ "1001 a 9000 internos" ,
-                                rango > 9000 ~ "9000 internos a más"),
-         .keep = "all")
-```
-
-```{r}
-# Obtenemos el conteo de la poblaciones por estrato
-pob_penit |> 
- count(rango) |> 
-  rename(cantidad=n)
-```
-
-```{r}
-# Estratificamos de acuerdo al rango de número de internos 
-pob_penit <- pob_penit |> 
-  mutate(rango3 = case_when(rango >=1 & rango <=1000 ~ "1 a 1000 internos",
-                                rango >=1001 & rango <= 2000 ~ "1001 a 2000 internos", 
-                                rango >=2001 & rango <= 3000 ~ "2001 a 3000 internos",
-                                rango >=3001 & rango <= 4000 ~ "3001 a 4000 internos",
-                                rango >=4001 & rango <= 9000 ~ "4001 a 9000 internos",
-                                rango > 9000 ~ "9001 internos a más"),
-         .keep = "all")
-```
-
-```{r}
-table(pob_penit$EST_PENIT, by=pob_penit$rango3)
-```
-
-```{r}
-pob_penit |> 
-  count(rango3) |> 
-  rename(cantidad=n)
-```
-
-```{r}
-# Extraemos el Muestreo Aleatorio Estratificado por rango de poblacion de internos
-set.seed(190190) # Clave para poder replicar
-mae_pob_penit <- pob_penit |>
-  group_by(rango) |> 
-  slice_sample(prop = 0.05) 
-# Obtenemos el conteo de la poblaciones por estrato
-mae_pob_penit |> 
-  count(rango) |> 
-  rename(cantidad=n)
-```
-
-```{r}
-# Ordenaremos de acuerdo al rango de internos
-pob_penit= pob_penit[order(pob_penit$rango,pob_penit$EST_PENIT ), ]
-dis1= list("stratified","cluster")
-# La variable 'rango'(Rango de internos) tiene 3 estratos y se usa como variable de estratificación en la muestra de primera etapa 
-# La variable 'EST_PENIT' (Establecimiento Penitenciario) tiene 65 categorías y se usa como variable de conglomerado en la muestra de segunda etapa.
-
-#m =mstage(pob_penit,stage= dis1, varnames=list("rango","EST_PENIT"), size=list(c(614,2714,480), c(5,5,5)), method=list(" ","srswor"))
-```
-
-Muestra con conglomerados (una etapa)
-
-```{r}
-# Al muestrear conglomerados aleatoriamente.
-
-# Primero, usamos la base por conglomerados (Estab. penitenciario) 
-base_ep_clusters <- pob_penit %>%
+base_clusters <- pob_penit %>%
   count(EST_PENIT)
-
-# Segundo, obtenemos la muestra aleatoria de conglomerados (Estab. penitenciario)
-set.seed(19011990)
-mac1_pob_penit <- base_ep_clusters %>%
-  slice_sample(prop = 0.05)
-
-# Tercero, juntamos las bases para tener las observaciones de los clusters elegidos
-mac1_f <- merge(x = pob_penit , y = mac1_pob_penit , by = c("EST_PENIT"))
 ```
 
-Muestra con conglomerados (multietápica)
+Segundo, obtenemos la muestra aleatoria de conglomerados (el número de conflomerados fue elegido de manera a que nuestra muestra contenga entre 1% y 5% del total de la población)
+```{r}
+set.seed(19011990)
+mac1_clusters <- base_clusters %>%
+  slice_sample(n = 10)
+```
+
+Tercero, juntamos las bases para tener las observaciones de los clusters elegidos
+```{r}
+mac1_f <- merge(x = pob_penit , y = mac1_clusters , by = c("EST_PENIT"))
+```
 
 ```{r}
-# Muestreamos al interior de cada cluster. Tenemos 65 clusters y seleccionaremos 10 obs de cada uno. 
 set.seed(19011990)
 mac2_f <- mac1_f %>%
   group_by(EST_PENIT) %>%
-  slice_sample(n = 10)
+  slice_sample(n = 100)
 ```
+
+Verificamos si nuestra muestra contiene entre 1% y 5% del total de la población. 
+```{r}
+tot_pop=nrow(pob_penit) 
+tot_pop 
+tot_mue=nrow(mac2_f)
+tot_mue
+
+tot_mue/tot_pop
+```
+
+Creamos nuestros pesos
+Primero verificamos nuestra población N y nuestra muesta n
+```{r}
+summary(pob_penit$EDAD)
+table(pob_penit$Grupo_edad)
+table(mac2_f$Grupo_edad)
+```
+
+Luego procedemos a crear submuestras para cada uno de los estratos
+```{r}
+mac2_f_0_19 = subset(mac2_f,mac2_f$Grupo_edad=="0-19")
+mac2_f_20_29 = subset(mac2_f,mac2_f$Grupo_edad=="20-29")
+mac2_f_30_39 = subset(mac2_f,mac2_f$Grupo_edad=="30-39")
+mac2_f_40_49 = subset(mac2_f,mac2_f$Grupo_edad=="40-49")
+mac2_f_50_59 = subset(mac2_f,mac2_f$Grupo_edad=="50-59")
+mac2_f_60_69 = subset(mac2_f,mac2_f$Grupo_edad=="60-69")
+mac2_f_70_79 = subset(mac2_f,mac2_f$Grupo_edad=="70-79")
+mac2_f_80_mas = subset(mac2_f,mac2_f$Grupo_edad=="80 a mas")
+```
+
+Luego crearemos una variable con la corrección de población finita para cada estrato
+Pirmero los creamos como objetos 
+```{r}
+N019=c(1162)
+n019=c(14)
+fpc019=1-(n019/N019)
+fpc019
+
+N2029=c(24993)
+n2029=c(281)
+fpc2029=1-(n2029/N2029)
+fpc2029
+
+N3039=c(24204)
+n3039=c(302)
+fpc3039=1-(n3039/N3039)
+fpc3039
+
+N4049=c(15308)
+n4049=c(226)
+fpc4049=1-(n4049/N4049)
+fpc4049
+
+N5059=c(7474)
+n5059=c(110)
+fpc5059=1-(n5059/N5059)
+fpc5059
+
+N6069=c(2418)
+n6069=c(32)
+fpc6069=1-(n6069/N6069)
+fpc6069
+
+N7079=c(525)
+n7079=c(8)
+fpc7079=1-(n7079/N7079)
+fpc7079
+
+N80mas=c(58)
+n80mas=c(0)
+fpc80mas=1-(n80mas/N80mas)
+fpc80mas
+```
+
+Y luego como variables
+```{r}
+mac2_f_0_19$fpc_mae=fpc019
+head(mac2_f_0_19$fpc_mae)
+
+mac2_f_20_29$fpc_mae=fpc2029
+head(mac2_f_20_29$fpc_mae)
+
+mac2_f_30_39$fpc_mae=fpc3039
+head(mac2_f_30_39$fpc_mae)
+
+mac2_f_40_49$fpc_mae=fpc4049
+head(mac2_f_40_49$fpc_mae)
+
+mac2_f_50_59$fpc_mae=fpc5059
+head(mac2_f_50_59$fpc_mae)
+
+mac2_f_60_69$fpc_mae=fpc6069
+head(mac2_f_60_69$fpc_mae)
+
+mac2_f_70_79$fpc_mae=fpc7079
+head(mac2_f_70_79$fpc_mae)
+
+#No creamos fpc para el grupo de 80 a más porque no hay observaciones
+```
+
+Procedemos a fusionar nuestras submuestras.
+```{r}
+mac2_append1=rbind(mac2_f_0_19, mac2_f_20_29)
+mac2_append2=rbind(mac2_append1, mac2_f_30_39)
+mac2_append3=rbind(mac2_append2, mac2_f_40_49)
+mac2_append4=rbind(mac2_append3, mac2_f_50_59)
+mac2_append5=rbind(mac2_append4, mac2_f_60_69)
+mac2_append6=rbind(mac2_append5, mac2_f_70_79)
+```
+
 
 ## Pregunta 5.	Declarar el diseño muestral (completo) y obtener las siguientes estadísticas (deben ser representativas):
 
 ```{r}
-#diseño_m = svydesign(id = ~EST_PENIT, strata = ~rango , fpc = ~fpc , data = muestra, nest = T)
+diseno_m = svydesign(id = ~EST_PENIT, strata = ~Grupo_edad , fpc = ~fpc_mae , data = mac2_append6, nest = T)
 ```
+
 
 ### a.	Porcentaje de personas que ha cometido “Delitos contra la seguridad pública”
 
+```{r}
+svymean(~pp_dcsp , diseno_m)
+```
+
 
 ### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
+```{r}
+svytotal(~pp_dcsp , diseno_m)
+```
 
 
 ```{r}
