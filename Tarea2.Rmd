@@ -175,6 +175,11 @@ mac2_f <- mac1_f %>%
 ### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
 
 
+```{r}
+# Clear Global environment
+rm(list=ls()) 
+```
+
 # Parte II: ENARES
 
 A cada grupo se le asignará una encuesta que pueda ser descargada de la página de microdatos del INEI. Dicha encuesta será utilizada para este ejercicio.
@@ -252,6 +257,21 @@ agraria del país a nivel de distrito, provincia y departamento, mientras que la
 
 ## Pregunta 2. En el Ministerio de Desarrollo le han encargado a Ud. como muestrista principal diseñar una encuesta probabilística para medir la prevalencia de vulnerabilidad a la pobreza (variable dicotómica) en todas las regiones del Perú. Su supervisor, quien es un muy buen policymaker pero sin ninguna formación cuantitativa ni de muestreo, se enteró del libro de Dillman (2014) y de las tablas de cálculo de tamaño de muestra. Él está solicitándole que justifique sus decisiones metodológicas pues argumenta que “como máximo se necesitaría una muestra de tamaño n=1067 como se observa en la figura 3.5 de libro”. Ud. ha planteado que se levante un muestreo complejo (estratificado y biétapico) para lograr el objetivo. Explique en castellano sencillo y de forma intuitiva por qué necesitaría (o no) una muestra de mayor tamaño. Incluya en su respuesta el concepto de tamaño de muestra efectivo, correlación intracluster y efecto de diseño. Recuerde que su supervisor no maneja estos temas. (Palabras: 500)
 
+Es verdad que solo necesitamos encuestar a 1067 personas para que nuestros resultados sean representativos de la población peruana con un nivel de confianza de 95% y con un margen de error de 3% para arriba y para abajo (lo aceptado en este sector). 
+
+Pero esta recomendación es para un muestreo aleatorio simple, donde sacamos una muestra de toda la población del Perú. Esto significaría agarrar la lista de nombres de los más de 33 millones de peruanos y sacar al azar 1067 personas. Esto en la práctica conlleva a una serie de problemas. 
+
+Primero, esa muestra es representativa para el Perú en su conjunto, pero no necesariamente para cada región. Para ello, necesitamos sacar 26 muestras representativas de cada región (llamada dominio en estadística). Por lo que es necesario volver a la tabla de Dillman y ver el tamaño de muestra considerando la población de cada región. 
+
+Segundo, que podría tocarnos una muestra muy dispersa y nuestros recursos no alcanzan para enviar a nuestros encuestadores a tantos lugares distintos. 
+
+Finalmente, aunque la teoría nos dice que si sacamos miles de muestras, en promedio deberíamos tener una nuestra muestra representativas de nuestra población, en la práctica puede que nos toque una muestra muy desbalanceada. Es decir que podrían tocar individuos solo de Lima, podrían tocar solo hombres o una muestra con gente mucho más propensa a caer en la pobreza.
+
+Respecto al segundo punto, si queremos una muestra representativa con el mismo nivel de confianza y margen de error pero que sea factible tenemos que usar un muestreo por conglomerados. Por ejemplo, en vez de aleatorizar personas aleatorizamos distritos y dentro de cada distrito aleatorizamos personas, esto es un muestreo bietápico. Así nuestros encuestadores se desplazarán menos. Sin embargo, puede que los individuos en estos distritos sean similares en características que determinen la vulnerabilidad a la pobreza por lo que nuestra muestra es menos representativa que una extraída con muestreo aleatorio. Esta medida de similitud se llama correlación intracluster y entre más alta sea, menos información (medido con la varianza) nos da cada persona extra que encuestemos en nuestro conglomerado. 
+
+Esta penalidad se mide con el efecto del diseño donde comparamos la varianza que da nuestra muestra bietápica comparada a la muestra simple. Para saber cuántas personas más, calculamos el tamaño de muestra efectivo, es decir el tamaño que nuestra muestra bietápica debe tener para que sea igual de informativa que nuestra muestra simple de 1067 personas. Para ello simplemente multiplicamos el efecto del diseño por 1067. 
+
+Sobre el tercer punto, para conseguir muestras balanceadas, es mejor estratificar. Es decir, dividimos la muestra en bolos, por ejemplo, uno de hombres y mujeres, y extraemos aleatoriamente una muestra de cada grupo correspondiente a su proporción en la población. En este caso mitad hombres y mitad mujeres. Al ser un muestreo estratificado más representativo que el muestreo simple, su efecto de diseño es menor a 1, lo que conlleva a un tamaño de muestra efectivo menor. Esto nos permite encuestar a menos personas, aunque no compense la penalidad por dominio y por conglomerado.
 
 
 
