@@ -1,8 +1,15 @@
 ---
-title: "Tarea_2"
-author: "Elias Quispe"
-date: "2/6/2022"
-output: html_document
+title: "Big Data & Analytics: Trabajo 2"
+author: "S. Gutierrez, A. Mosqueira, A. Palacios, E. Quispe, "
+date: "05/06/2022"
+output:
+  rmdformats::material:
+  code_folding: show
+  self_contained: true
+  thumbnails: false
+  lightbox: false
+pkgdown:
+  as_is: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -25,6 +32,13 @@ library(rio)
 library(tidyr)
 library(sampling)
 ```
+
+# Integrantes:
+#### Andrés Palacios
+#### Adriana Mosqueira
+#### Elías Quispe
+#### Sandra Gutierrez
+
 # Parte I
 
 ### 1.	Descargue el Censo Nacional de Población Penitenciaria 2016 de la página del INEI (http://iinei.inei.gob.pe/microdatos/). Puede descargar solo la carátula o también más módulos de dicho censo.
@@ -169,6 +183,71 @@ mac2_f <- mac1_f %>%
 
 #### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
 
+
+# Parte II: ENARES
+
+A cada grupo se le asignará una encuesta que pueda ser descargada de la página de microdatos del INEI. Dicha encuesta será utilizada para este ejercicio.
+
+## 1.	Explicar el diseño muestral de la encuesta. Luego, declarar el diseño muestral (completo). Para esto se recomienda revisar la ficha técnica de la encuesta. Esta se encuentra disponible en la web de microdatos del INEI. 
+
+La Encuesta Nacional de Programas Presupuestales (ENAPRES) tiene como objetivo, detallar información estadística para el seguimiento y evaluación de los Programas Presupuestales (PP) a nivel nacional. Esta encuesta incluye aquellas viviendas particulares y sus ocupantes, quienes residen en el área urbana y área rural del país; sin embargo, se excluyeron aquellas personas que viven en viviendas colectivas. En cuanto al marco muestral básico para la selección de la muestra, se utilizó la información estadística y cartográfica del Sistema de Focalización de Hogares (SISFOH), actualizada al 2012 y 2013 del directorio de viviendas de cada conglomerado seleccionado.
+
+Por su parte, la unidad primaria de muestreo (UPM), diferencia entre el área urbano y rural. Para el primer caso, este se conformó por una o más manzanas consecutivas o adyacentes, además, un conglomerado urbano contiene en promedio 140 viviendas particulares. Para el segundo caso, se identificaron 2 tipos: el conglomerado rural conformado por una o más manzanas consecutivas o adyacentes que tiene 140 viviendas particulares en promedio y el Área de Empadronamiento Rural (AER) que contiene en promedio 100 viviendas particulares.
+
+Además, para ambos caso se considero la vivienda particular comol la unidad secundaria de muestreo (USM). 
+
+En cuanto al diseño muestral, es de tipo probabilística, estratificada, bietápica, independiente en cada departamento, de selección sistemática con probabilidad proporcional al tamaño en la primera etapa y sistemática simple en la segunda etapa. Además, se indica que el nivel de confianza de los resultados es del 95%.
+
+```{r}
+setwd("C:/Users/limon/OneDrive/2022/02. Diplomado/05. Big Data y Analytics para la GPP/PC2/761-Modulo1676")
+```
+
+```{r}
+ENAPRES = read_csv("CAP_200_URBANO_RURAL_4.csv")
+```
+
+```{r}
+table(ENAPRES$ESTRATO)
+```
+
+
+```{r}
+# Declarar el diseño muestral
+ENAPRES_svy = svydesign(id = ~1 , strata = ~ESTRATO, weights = ~FACTOR  , data = ENAPRES)
+```
+
+## 2.	Elegir y calcular dos variables: (i) una dicotómica = REGIONNATU (Selva ==1, Otros ==0), (ii) una continua = Grupo etario: P208_A. 
+
+(i) Se construye una variable dicotómica, que tendrá el varlor de 1 = Selva y 0 = Otros (o No Selva)
+```{r}
+ENAPRES$RegionSelva <- ifelse(ENAPRES$REGIONNATU == 3, 1, 0)
+table(ENAPRES$RegionSelva)
+```
+
+(ii) Primero se construye un variable categórica que determine los siguientes grupos etarios:
+```{r}
+ENAPRES = ENAPRES |> 
+  mutate(rango_edad=
+           case_when(P208_A %in% c(1:11)~"11 a 24",
+                     P208_A %in% c(12:24)~"12 a 24",
+                     P208_A %in% c(25:64)~"25 a 64",
+                     P208_A %in% c(65:99)~"65 a mas",
+                     FALSE~"Ninguno"))
+
+table(ENAPRES$P208_A)
+```
+
+## 3.	Para la dicotómica, obtener la media y población. Para la continua, obtener la media (deben ser representativas). 
+a.	Variable dicotómica = REGIONNATU (Selva ==1, Otros ==0): media y población
+```{r}
+svymean(~REGIONNATU , ENAPRES_svy)
+svytotal(~REGIONNATU , ENAPRES_svy)
+```
+
+b.	Una continua = Grupo etario: P208_A: media (representativa)
+```{r}
+svymean(~P208_A , ENAPRES_svy)
+```
 
 # Parte III
 
