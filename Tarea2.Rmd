@@ -1,6 +1,6 @@
 ---
 title: "Big Data & Analytics: Trabajo 2"
-author: "S. Gutierrez, A. Mosqueira, A. Palacios, E. Quispe, "
+author: "A. Mosqueira, A. Palacios, E. Quispe, "
 date: "05/06/2022"
 output:
   rmdformats::material:
@@ -37,7 +37,6 @@ library(sampling)
 #### Andrés Palacios
 #### Adriana Mosqueira
 #### Elías Quispe
-#### Sandra Gutierrez
 
 # Parte I
 
@@ -254,7 +253,7 @@ La Encuesta Nacional de Programas Presupuestales (ENAPRES) tiene como objetivo, 
 
 Por su parte, la unidad primaria de muestreo (UPM), diferencia entre el área urbano y rural. Para el primer caso, este se conformó por una o más manzanas consecutivas o adyacentes, además, un conglomerado urbano contiene en promedio 140 viviendas particulares. Para el segundo caso, se identificaron 2 tipos: el conglomerado rural conformado por una o más manzanas consecutivas o adyacentes que tiene 140 viviendas particulares en promedio y el Área de Empadronamiento Rural (AER) que contiene en promedio 100 viviendas particulares.
 
-Además, para ambos casos se considero la vivienda particular comol la unidad secundaria de muestreo (USM). 
+Además, para ambos casos se considero la vivienda particular como la unidad secundaria de muestreo (USM). 
 
 En cuanto al tipo de muestreo se identifica que esta encuesta es de tipo probabilística, estratificada, bietápica, independiente en cada departamento, de selección sistemática con probabilidad proporcional al tamaño en la primera etapa y sistemática simple en la segunda etapa. Además, se indica que el nivel de confianza de los resultados es del 95%.
 
@@ -266,13 +265,53 @@ setwd("C:/Users/limon/Documents/GitHub/BDA_Tarea2")
 ENAPRES = read_csv("CAP_200_URBANO_RURAL_4.csv")
 ```
 
+Para la declaración del diseño muestral, dado que la muestra es estratificada y bietápica, se identificaron algunas observaciones que no pertenecen a ningun a estrato, específicamente en las observaciones correspondientes al área rural. Estas observaciones tuvieron que ser eliminadas para poder declarar el diseño muestral tomando en cuenta la variable estrato identificada por la encuesta, denominada "ESTRATO".
+
 ```{r}
-table(ENAPRES$ESTRATO)
+ENAPRES <- ENAPRES[!is.na(ENAPRES$ESTRATO), ]
+ENAPRES <- ENAPRES[!is.na(ENAPRES$P208_A), ]
 ```
 
-Declarar el diseño muestral
+Prodemos a identificar la cantidad de clusters que existen para la muestra
 ```{r}
-ENAPRES_svy = svydesign(id = ~1 , strata = ~ESTRATO, weights = ~FACTOR  , data = ENAPRES)
+clusters_ENAPRES <- ENAPRES %>%
+  count(CONGLOMERADO)
+```
+
+### Para la ETAPA I:
+```{r}
+set.seed(10201995)
+MAC_ENAPRES <- clusters_ENAPRES %>%
+  slice_sample(prop = 0.01)
+```
+
+Ahora, juntamos ambas bases: ENAPRES + MAC_ENAPRES, para tener las observaciones de los clusters elegidos
+```{r}
+MAC_ENAPRES_I <- merge(x = ENAPRES , y = MAC_ENAPRES , by = c("CONGLOMERADO"))
+```
+
+### Para la ETAPA II:
+```{r}
+set.seed(10201995)
+MAC_ENAPRES_II <- MAC_ENAPRES_I %>%
+  group_by(CONGLOMERADO) %>%
+  slice_sample(n = 50)
+```
+
+```{r}
+table(MAC_ENAPRES_II$ESTRATO)
+```
+En este caso se indica en el diseño muestral que es una muestra bietapica, para lo cual se identifican los conglomerados (CONGLOMERADO es el identificador de cada conconglomerado). Luego, al interior de cada uno se muestrean las viviendas (VIVIENDA el identificador de cada una de estas). Así, los conglomerados vienen a ser PSU y las viviendas SSU. Entonces, fpc1 tiene el total de conglomerados y fpc2 el total de viviendas.
+
+Procedemos a agregar variables relevantes: fpc1 y fpc2
+```{r}
+MAC_ENAPRES_II <- MAC_ENAPRES_II %>%
+  mutate(fpc1 = 3467 , fpc2 = 380 , .keep = "all")
+```
+
+Se declara el diseño muestral:
+```{r}
+ENAPRES_svy = svydesign(id = ~CONGLOMERADO+VIVIENDA , strata = ~ESTRATO, fpc=~fpc1+fpc2 , weights = ~FACTOR , data = MAC_ENAPRES_II, nest=TRUE)
 ```
 
 ## Pregunta 2.	Elegir y calcular dos variables: (i) una dicotómica = REGIONNATU (Selva ==1, Otros ==0), (ii) una continua = Grupo etario: P208_A. 
@@ -283,27 +322,20 @@ ENAPRES$RegionSelva <- ifelse(ENAPRES$REGIONNATU == 3, 1, 0)
 table(ENAPRES$RegionSelva)
 ```
 
-(ii) Primero se construye un variable categórica que determine los siguientes grupos etarios:
+(ii) Se elige como variable continua, la varible edad = P208_A
 ```{r}
-ENAPRES = ENAPRES |> 
-  mutate(rango_edad=
-           case_when(P208_A %in% c(1:11)~"11 a 24",
-                     P208_A %in% c(12:24)~"12 a 24",
-                     P208_A %in% c(25:64)~"25 a 64",
-                     P208_A %in% c(65:99)~"65 a mas",
-                     FALSE~"Ninguno"))
-
 table(ENAPRES$P208_A)
 ```
 
 ## Pregunta 3.	Para la dicotómica, obtener la media y población. Para la continua, obtener la media (deben ser representativas). 
-a.	Variable dicotómica = REGIONNATU (Selva ==1, Otros ==0): media y población
+(i)	Variable dicotómica = REGIONNATU (Selva ==1, Otros ==0): media y población
 ```{r}
 svymean(~REGIONNATU , ENAPRES_svy)
 svytotal(~REGIONNATU , ENAPRES_svy)
 ```
 
-b.	Una continua = Grupo etario: P208_A: media (representativa)
+(ii) Variable continua = P208_A: media (representativa)
+
 ```{r}
 svymean(~P208_A , ENAPRES_svy)
 ```
