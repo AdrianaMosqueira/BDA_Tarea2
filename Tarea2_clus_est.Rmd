@@ -59,23 +59,29 @@ La variable usada para estratificar será el intervalo del número de internos p
 #Nos interesa saber cuál es la proporción de presos por etapas de vida. Creamos una variable categórica por cohortes que nos serivrá para posterior estratificación.
 
 ```{r}
-#Nos interesa saber cuál es la proporción de presos por etapas de vida. Creamos una variable categórica por cohortes que nos serivrá para posterior estratificación.
-
-pob_penit=mutate(pob_penit,Grupo_edad=
-                       case_when(EDAD %in% c(0:19)~"0-19",
-                            EDAD %in% c(20:29)~"20-29",
-                            EDAD %in% c(30:39)~"30-39",
-                            EDAD %in% c(40:49)~"40-49",
-                            EDAD %in% c(50:59)~"50-59",
-                            EDAD %in% c(60:69)~"60-69",
-                            EDAD %in% c(70:79)~"70-79",
-                            EDAD %in% c(80:120)~"80 a mas",
-                            TRUE~"Ninguno"))
+#Nos interesa saber cuál es la proporción de presos por etapas de vida. Creamos una variable categórica por cohortes que nos serivrá para posterior estratificación. 
+#Primero eliminamos las variables omitidas en edad
+summary(pob_penit$EDAD)
+pob_penit2=pob_penit[!is.na(pob_penit$EDAD),]
 ```
 
 ```{r}
+summary(pob_penit2$EDAD)
+```
+
+
+```{r}
+pob_penit2=mutate(pob_penit2,Grupo_edad=
+                       case_when(EDAD %in% c(0:29)~"0-29",
+                            EDAD %in% c(30:59)~"30-59",
+                            EDAD %in% c(60:89)~"60 a mas"))
+                            
+```
+
+
+```{r}
 # Primero necesitamos una base de los conglomerados
-base_clusters <- pob_penit %>%
+base_clusters <- pob_penit2 %>%
   count(EST_PENIT)
 ```
 
@@ -83,26 +89,26 @@ base_clusters <- pob_penit %>%
 # Segundo, obtenemos la muestra aleatoria de conglomerados (el número de conflomerados fue elegido de manera a que nuestra muestra contenga entre 1% y 5% del total de la población)
 set.seed(19011990)
 mac1_clusters <- base_clusters %>%
-  slice_sample(n = 10)
+  slice_sample(n = 15)
 ```
 
 ```{r}
 # Tercero, juntamos las bases para tener las observaciones de los clusters elegidos
-mac1_f <- merge(x = pob_penit , y = mac1_clusters , by = c("EST_PENIT"))
+mac1_f <- merge(x = pob_penit2 , y = mac1_clusters , by = c("EST_PENIT"))
 ```
 
 ```{r}
 set.seed(19011990)
 mac2_f <- mac1_f %>%
   group_by(EST_PENIT) %>%
-  slice_sample(n = 100)
+  slice_sample(n = 200)
 ```
 
 
 ```{r}
 #Verificamos si nuestra muestra contiene entre 1% y 5% del total de la población. 
 
-tot_pop=nrow(pob_penit) 
+tot_pop=nrow(pob_penit2) 
 tot_pop 
 tot_mue=nrow(mac2_f)
 tot_mue
@@ -113,10 +119,57 @@ tot_mue/tot_pop
 ```{r}
 #Creamos nuestros pesos
 #Primer verificamos nuestra población N y nuestra muesta n
-summary(pob_penit$EDAD)
-table(pob_penit$Grupo_edad)
+summary(pob_penit2$EDAD)
+table(pob_penit2$Grupo_edad)
 table(mac2_f$Grupo_edad)
 ```
+
+```{r}
+#Nuego declaramos nuestro diseño
+#Nuestra corrección de población finita para la UPM es el número de conglomerados, en este caso el de establecimientos penitenciarios
+#fpc1=nrow(base_clusters)
+#fpc1
+
+##Nuestra corrección de población finita para la UsM es el número de internos, en este caso usaremos la variable "n" que cuenta el número de internos en cada establecimiento penitenciario.
+#fpc2=mac2_f$n
+#fpc2
+```
+
+
+```{r}
+mac2_f <- mac2_f %>%
+  mutate(fpc1 = nrow(base_clusters) , fpc2 = n , .keep = "all")
+
+```
+### 5.	Declarar el diseño muestral (completo) y obtener las siguientes estadísticas (deben ser representativas):
+
+```{r}
+diseno_m = svydesign(id = ~EST_PENIT+ID_CARATULA, strata = ~Grupo_edad , fpc = ~fpc1+fpc2 , data = mac2_f, nest = T)
+```
+
+
+#### a.	Porcentaje de personas que ha cometido “Delitos contra la seguridad pública”
+
+```{r}
+svymean(~pp_dcsp , diseno_m)
+```
+
+
+#### b.	Total de personas que ha cometido “Delitos contra la seguridad pública”
+```{r}
+svytotal(~pp_dcsp , diseno_m)
+```
+
+```{r}
+table(pob_penit2$EST_PENIT,pob_penit2$Grupo_edad)
+
+```
+
+```{r}
+table(mac2_f$EST_PENIT,mac2_f$Grupo_edad)
+
+```
+
 
 ```{r}
 #Luego procedemos a crear submuestras para cada uno de los estratos
@@ -215,7 +268,7 @@ mac2_append6=rbind(mac2_append5, mac2_f_70_79)
 ### 5.	Declarar el diseño muestral (completo) y obtener las siguientes estadísticas (deben ser representativas):
 
 ```{r}
-diseno_m = svydesign(id = ~EST_PENIT, strata = ~Grupo_edad , fpc = ~fpc_mae , data = mac2_append6, nest = T)
+diseno_m = svydesign(id = ~EST_PENIT+ID_CARATULA, strata = ~Grupo_edad , fpc = ~+n , data = mac2_append6, nest = T)
 ```
 
 
